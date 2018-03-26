@@ -1,8 +1,9 @@
-    from maya import OpenMayaUI as omui
+from maya import OpenMayaUI as omui
 import os
 
 import maya.cmds as mc
 from pymel.core import *
+from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
 
 
 
@@ -22,13 +23,13 @@ except ImportError:
 # to be sure we laod the plugin
 # loadPlugin("fbxmaya")
 
-class ToolWindow(QMainWindow):
+class ToolWindow(MayaQWidgetBaseMixin,QMainWindow):
     selected_items = [None]
 
     def __init__(self, *args, **kwargs):
         super(ToolWindow,self).__init__(*args, **kwargs)
         self.setWindowTitle('OPS - Batch export')
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.Window)
 
         frame = QWidget()
         layout = QVBoxLayout()
@@ -120,7 +121,10 @@ class ToolWindow(QMainWindow):
         setAttr(selection[0] + '.translateX',0)
         setAttr(selection[0] + '.translateY',0)
         setAttr(selection[0] + '.translateZ',0)
-
+        
+        
+mayaMainWindowPtr = omui.MQtUtil.mainWindow() 
+mayaMainWindow= wrapInstance(long(mayaMainWindowPtr), ToolWindow) 
 
 tool_window = ToolWindow()
 tool_window.show()
