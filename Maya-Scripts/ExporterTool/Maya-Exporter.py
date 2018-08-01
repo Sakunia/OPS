@@ -1,10 +1,15 @@
+# Copyright (c) 2017 Ben de Hullu
+# Free for commerical use
+
+# The tool expects a Locator with "Root_" as prefix
+# Meshes that should be exported will be moved to the origin of the world
+# And exported in the *SaveFileLocation*/Export
+
 from maya import OpenMayaUI as omui
 import os
 
 import maya.cmds as mc
 from pymel.core import *
-from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
-
 
 
 try:
@@ -21,15 +26,15 @@ except ImportError:
 
 
 # to be sure we laod the plugin
-# loadPlugin("fbxmaya")
+loadPlugin("fbxmaya")
 
-class ToolWindow(MayaQWidgetBaseMixin,QMainWindow):
+class ToolWindow(QMainWindow):
     selected_items = [None]
 
     def __init__(self, *args, **kwargs):
         super(ToolWindow,self).__init__(*args, **kwargs)
         self.setWindowTitle('OPS - Batch export')
-        self.setWindowFlags(Qt.Window)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
 
         frame = QWidget()
         layout = QVBoxLayout()
@@ -40,7 +45,7 @@ class ToolWindow(MayaQWidgetBaseMixin,QMainWindow):
 
         objects = self.getAllGroupsInScene()
         for i in objects:
-            asset_list.addItem(i[:-5])
+            asset_list.addItem(i)
 
         asset_list.itemClicked.connect(lambda item: self.getSelectedFromList(asset_list))
 
@@ -80,7 +85,7 @@ class ToolWindow(MayaQWidgetBaseMixin,QMainWindow):
         if bExport_folder:
             self.checkExportDirValid(out_path + 'Export/')
             return out_path + 'Export/'
-
+            
         return file_path[:-len(file_name)]
 
     def checkExportDirValid(self,input_dir):
@@ -89,21 +94,26 @@ class ToolWindow(MayaQWidgetBaseMixin,QMainWindow):
             os.makedirs(dir)
 
     def getAllGroupsInScene(self):
-        out = mc.ls('Root_*', s =True)
-        print out
-        return out
+        out = mc.ls('Root_*',s = True)
+        outNew = []
+        
+        for i in out:
+            outNew.append(cmds.listRelatives(i, parent = True)[0])
+                       
+        return outNew
 
-    def getSelectedFromList(self,List):
+    def getSelectedFromList(self, List):
         out_list = []
         for i in List.selectedItems():
             out_list.append( i.text())
 
         self.selected_items = out_list
 
-    def ExportObject(self,object):
+    def ExportObject(self,object):       
         select(object)
         selection = ls(sl=True)
-        shape = selection [0].getShape()
+     
+        shape = selection[0].getShape()
         makeIdentity(a= True, t= True, s = True, pn = True)
 
         shape_x = getAttr(shape + '.localPositionX')
@@ -121,10 +131,7 @@ class ToolWindow(MayaQWidgetBaseMixin,QMainWindow):
         setAttr(selection[0] + '.translateX',0)
         setAttr(selection[0] + '.translateY',0)
         setAttr(selection[0] + '.translateZ',0)
-        
-        
-mayaMainWindowPtr = omui.MQtUtil.mainWindow() 
-mayaMainWindow= wrapInstance(long(mayaMainWindowPtr), ToolWindow) 
+
 
 tool_window = ToolWindow()
 tool_window.show()
